@@ -4,7 +4,7 @@ import PostSkeleton from "../skeletons/PostSkeleton.jsx";
 import { useQuery } from "@tanstack/react-query";
 
 const Posts = ({ feedType }) => {
-  // Dynamically determine the endpoint based on feedType
+
   const getPostEndPoint = () => {
     switch (feedType) {
       case "forYou":
@@ -41,9 +41,8 @@ const Posts = ({ feedType }) => {
         throw new Error(error);
       }
     },
-    retry: false, 
+    retry: false,
   });
-
 
   useEffect(() => {
     refetch();
