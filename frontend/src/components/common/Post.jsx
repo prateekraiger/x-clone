@@ -11,6 +11,7 @@ import {
 } from "react-icons/fa";
 import { BiRepost } from "react-icons/bi";
 import LoadingSpinner from "./LoadingSpinner";
+import { formatPostDate } from "../../utils/date"; // Import the function
 
 const Post = ({ post: initialPost }) => {
   const [post, setPost] = useState(initialPost);
@@ -20,7 +21,7 @@ const Post = ({ post: initialPost }) => {
 
   const isLiked = post.likes.includes(authUser?.id);
   const isMyPost = authUser?.id === post.user._id;
-  const formattedDate = "1h"; // You might want to properly format this based on post.createdAt
+  const formattedDate = formatPostDate(post.createdAt); // Use the function
 
   const { mutate: deletePost, isLoading: isDeleting } = useMutation({
     mutationFn: async () => {
@@ -92,6 +93,27 @@ const Post = ({ post: initialPost }) => {
     },
   });
 
+  const { mutate: deleteComment, isLoading: isDeletingComment } = useMutation({
+    mutationFn: async (commentId) => {
+      const res = await fetch(`/api/posts/comment/${post._id}/${commentId}`, {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to delete comment");
+      return data;
+    },
+    onSuccess: (updatedPost) => {
+      setPost(updatedPost);
+      toast.success("Comment deleted successfully!");
+    },
+    onError: (error) => {
+      toast.error(error.message);
+    },
+  });
+
   const handleDeletePost = () => {
     if (window.confirm("Are you sure you want to delete this post?")) {
       deletePost();
@@ -111,6 +133,12 @@ const Post = ({ post: initialPost }) => {
     }
     if (isLiking) return;
     likePost();
+  };
+
+  const handleDeleteComment = (commentId) => {
+    if (window.confirm("Are you sure you want to delete this comment?")) {
+      deleteComment(commentId);
+    }
   };
 
   return (
@@ -261,6 +289,19 @@ const Post = ({ post: initialPost }) => {
                     </div>
                     <div className="text-sm">{comment.text}</div>
                   </div>
+                  {authUser?.id === comment.user._id && (
+                    <button
+                      className="ml-auto text-red-500 hover:text-red-700 transition-colors"
+                      onClick={() => handleDeleteComment(comment._id)}
+                      disabled={isDeletingComment}
+                    >
+                      {isDeletingComment ? (
+                        <LoadingSpinner size="sm" />
+                      ) : (
+                        <FaTrash />
+                      )}
+                    </button>
+                  )}
                 </div>
               ))
             )}
