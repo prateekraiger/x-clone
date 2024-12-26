@@ -16,13 +16,14 @@ export const getUserProfile = async (req, res) => {
   }
 };
 
+// Backend API
 export const getSuggestedProfile = async (req, res) => {
   try {
     const userId = req.user._id;
-
     const userFollowedByMe = await User.findById(userId).select("following");
 
     if (!userFollowedByMe) {
+      console.log("No user found with the given ID.");
       return res.status(404).json({ error: "User not found" });
     }
 
@@ -30,26 +31,26 @@ export const getSuggestedProfile = async (req, res) => {
       { $match: { _id: { $ne: userId } } },
       { $sample: { size: 10 } },
     ]);
+    console.log("Sampled users:", users);
 
     if (users.length === 0) {
-      console.log("No users found in the database.");
       return res.status(404).json({ error: "No users found" });
     }
 
     const followedUserIds = userFollowedByMe.following.map((id) =>
       id.toString()
     );
+
     const filteredUsers = users.filter(
       (user) => !followedUserIds.includes(user._id.toString())
     );
 
     const suggestedUsers = filteredUsers.slice(0, 4).map((user) => {
-      const userObj = user.toObject();
-      userObj.password = null;
-      return userObj;
+      user.password = null; // Remove the password field
+      return user;
     });
 
-    res.status(200).json(suggestedUsers);
+    res.status(200).json({ suggestedUsers });
   } catch (err) {
     console.log("Error in getSuggestedProfile controller", err.message);
     res.status(500).json({ error: "Internal Server Error" });
